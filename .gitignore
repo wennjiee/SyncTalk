@@ -1,0 +1,15 @@
+0download/
+model/
+.vscode/*
+__pycache__/
+build/
+*.egg-info/
+*.so
+*.mp4
+*.wav
+data/*
+*.npy
+*.pth
+*.png
+*.mat
+*.obj
