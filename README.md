@@ -27,7 +27,8 @@ A short demo video can be found [here](./demo/short_demo.mp4).
 - [2024-03-22] The Google Colab notebook is released.
 - [2024-04-14] Add Windows support.
 - [2024-04-28] The preprocessing code is released.
-- **[2024-04-29] Fix bugs: audio encoder, blendshape capture, and face tracker.**
+- [2024-04-29] Fix bugs: audio encoder, blendshape capture, and face tracker.
+- **[2024-05-03] Try replacing NeRF with Gaussian Splatting. Code: [GS-SyncTalk](https://github.com/ZiqiaoPeng/GS-SyncTalk)**
 
 
 
@@ -53,6 +54,7 @@ conda activate synctalk
 pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu113
 pip install -r requirements.txt
 pip install --no-index --no-cache-dir pytorch3d -f https://dl.fbaipublicfiles.com/pytorch3d/packaging/wheels/py38_cu113_pyt1121/download.html
+pip install tensorflow-gpu==2.8.1
 pip install ./freqencoder
 pip install ./shencoder
 pip install ./gridencoder
@@ -137,6 +139,13 @@ python main.py data/May --workspace model/trial_may -O --iters 100000 --finetune
 # or you can use the script to train
 sh ./scripts/train_may.sh
 ```
+**[Tips]** Audio visual encoder (AVE) is suitable for characters with accurate lip sync and large lip movements such as May and Shaheen. Using AVE in the inference stage can achieve more accurate lip sync. If your training results show lip jitter, please try using deepspeech model as audio feature encoder. 
+
+```bash
+# Use deepspeech model
+python main.py data/May --workspace model/trial_may -O --iters 60000 --asr_model deepspeech
+python main.py data/May --workspace model/trial_may -O --iters 100000 --finetune_lips --patch_size 64 --asr_model deepspeech
+```
 
 ### Test
 ```bash
@@ -149,6 +158,7 @@ python main.py data/May --workspace model/trial_may -O --test --asr_model ave --
 - [x] **Release Pre-trained Model.**
 - [x] **Release Google Colab.**
 - [x] **Release Preprocessing Code.**
+- [x] **Add audio feature encoder arguments.**
 
 
 
@@ -168,3 +178,6 @@ python main.py data/May --workspace model/trial_may -O --test --asr_model ave --
 This code is developed heavily relying on [ER-NeRF](https://github.com/Fictionarry/ER-NeRF), and also [RAD-NeRF](https://github.com/ashawkey/RAD-NeRF), [GeneFace](https://github.com/yerfor/GeneFace), [DFRF](https://github.com/sstzal/DFRF), [DFA-NeRF](https://github.com/ShunyuYao/DFA-NeRF/), [AD-NeRF](https://github.com/YudongGuo/AD-NeRF), and [Deep3DFaceRecon_pytorch](https://github.com/sicxu/Deep3DFaceRecon_pytorch).
 
 Thanks for these great projects.
+
+## Disclaimer
+By using the "SyncTalk", users agree to comply with all applicable laws and regulations, and acknowledge that misuse of the software, including the creation or distribution of harmful content, is strictly prohibited. The developers of the software disclaim all liability for any direct, indirect, or consequential damages arising from the use or misuse of the software.
