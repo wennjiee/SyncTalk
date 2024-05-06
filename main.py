@@ -120,8 +120,8 @@ if __name__ == '__main__':
     opt = parser.parse_args()
 
     if opt.O:
-        opt.fp16 = True
-        opt.exp_eye = True
+        opt.fp16 = True # use amp mixed precision training
+        opt.exp_eye = True # explicitly control the eyes
 
     if opt.test and False:
         opt.smooth_path = True
