@@ -25,6 +25,8 @@ def extract_audio_features(path, mode='deepspeech'):
         cmd = f'python nerf/asr.py --wav {path} --save_feats'
     elif mode == "deepspeech": # deepspeech
         cmd = f'python data_utils/deepspeech_features/extract_ds_features.py --input {path}'
+    elif mode == "hubert":
+        cmd = f'python data_utils/hubert.py --wav {path}'
     os.system(cmd)
     print(f'[INFO] ===== extracted audio labels =====')
 
@@ -416,7 +418,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('path', type=str, help="path to video file")
     parser.add_argument('--task', type=int, default=-1, help="-1 means all")
-    parser.add_argument('--asr', type=str, default='deepspeech', help="wav2vec or deepspeech")
+    parser.add_argument('--asr', type=str, default='deepspeech', help="wav2vec or deepspeech or hubert")
 
 
     opt = parser.parse_args()
