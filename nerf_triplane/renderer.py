@@ -208,7 +208,7 @@ class NeRFRenderer(nn.Module):
             counter = self.step_counter[self.local_step % 16]
             counter.zero_() # set to 0
             self.local_step += 1
-
+            # xyzs采样点的坐标，dirs采样点方向，deltas采样点步长、路径，rays射线id
             xyzs, dirs, deltas, rays = raymarching.march_rays_train(rays_o, rays_d, self.bound, self.density_bitfield, self.cascade, self.grid_size, nears, fars, counter, self.mean_count, perturb, 128, force_all_rays, dt_gamma, max_steps)
             sigmas, rgbs, amb_aud, amb_eye, uncertainty = self(xyzs, dirs, enc_a, ind_code, eye)
             sigmas = self.density_scale * sigmas
