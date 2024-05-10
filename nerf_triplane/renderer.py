@@ -274,7 +274,7 @@ class NeRFRenderer(nn.Module):
         image = image.view(*prefix, 3)
         image = image.clamp(0, 1)
 
-        depth = torch.clamp(depth - nears, min=0) / (fars - nears + 1e-16)
+        depth = torch.clamp(depth - nears, min=0) / (fars - nears)
         depth = depth.view(*prefix)
 
         amb_aud_sum = amb_aud_sum.view(*prefix)
