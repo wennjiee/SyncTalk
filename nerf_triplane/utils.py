@@ -1095,8 +1095,8 @@ class Trainer(object):
         # write video
         all_preds = np.stack(all_preds, axis=0)
         all_preds_depth = np.stack(all_preds_depth, axis=0)
-        imageio.mimwrite(os.path.join(save_path, f'{name}.mp4'), all_preds, fps=25, quality=8, macro_block_size=1)
-        imageio.mimwrite(os.path.join(save_path, f'{name}_depth.mp4'), all_preds_depth, fps=25, quality=8, macro_block_size=1)
+        imageio.mimwrite(os.path.join(save_path, f'{name}.mp4'), all_preds, fps=25, quality=10, macro_block_size=1)
+        imageio.mimwrite(os.path.join(save_path, f'{name}_depth.mp4'), all_preds_depth, fps=25, quality=10, macro_block_size=1)
         digitalHumanName = self.opt.path.split('/')[-1]
         audio_model = self.opt.asr_model
         test_audio = self.opt.aud.split('/')[-1]
