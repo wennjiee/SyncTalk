@@ -325,7 +325,7 @@ class NeRFNetwork(NeRFRenderer):
 
         return unc
 
-
+    # x采样点坐标、d采样点方向、enc_a音频编码、c、e眨眼矩阵
     def forward(self, x, d, enc_a, c, e=None):
         # x: [N, 3], in [-bound, bound]
         # d: [N, 3], nomalized in [-1, 1]
@@ -335,20 +335,20 @@ class NeRFNetwork(NeRFRenderer):
         enc_x = self.encode_x(x, bound=self.bound)
 
         sigma_result = self.density(x, enc_a, e, enc_x)
-        sigma = sigma_result['sigma']
-        geo_feat = sigma_result['geo_feat']
-        aud_ch_att = sigma_result['ambient_aud']
-        eye_att = sigma_result['ambient_eye']
+        sigma = sigma_result['sigma'] # 1st column, every sample's sigma
+        geo_feat = sigma_result['geo_feat'] # the rest of column
+        aud_ch_att = sigma_result['ambient_aud'] # attention weight of audio
+        eye_att = sigma_result['ambient_eye'] # attention weight of expression
 
         # color
-        enc_d = self.encoder_dir(d)
+        enc_d = self.encoder_dir(d) # self.encoder_dir = get_encoder('spherical_harmonics')
 
         if c is not None:
-            h = torch.cat([enc_d, geo_feat, c.repeat(x.shape[0], 1)], dim=-1)
+            h = torch.cat([enc_d, geo_feat, c.repeat(x.shape[0], 1)], dim=-1) # 16 + 64 + 4
         else:
             h = torch.cat([enc_d, geo_feat], dim=-1)
                 
-        h_color = self.color_net(h)
+        h_color = self.color_net(h) # MLP, get every sample's rgb
         color = torch.sigmoid(h_color)*(1 + 2*0.001) - 0.001
         
         uncertainty = self.predict_uncertainty(enc_x)
@@ -356,31 +356,31 @@ class NeRFNetwork(NeRFRenderer):
 
         return sigma, color, aud_ch_att, eye_att, uncertainty[..., None]
 
-
+    # x采样点坐标、enc_a音频编码、e眨眼矩阵、enc_x分解后采样点坐标
     def density(self, x, enc_a, e=None, enc_x=None):
         # x: [N, 3], in [-bound, bound]
         if enc_x is None:
             enc_x = self.encode_x(x, bound=self.bound)
 
         enc_a = enc_a.repeat(enc_x.shape[0], 1)
-        aud_ch_att = self.aud_ch_att_net(enc_x)
+        aud_ch_att = self.aud_ch_att_net(enc_x) # self.aud_ch_att_net = MLP, aud_ch_att = 1048576*32, 每个采样点对应的音频特征注意力权重, in paper formulation (4)
         enc_w = enc_a * aud_ch_att
 
         if e is not None:
             # e = self.encoder_eye(e)
             # eye_att = torch.sigmoid(self.eye_att_net(enc_x))
             e = e.repeat(enc_x.shape[0], 1)
-            eye_att = self.eye_att_net(enc_x)
+            eye_att = self.eye_att_net(enc_x) # eye_att = 1048576*7, 每个采样点对应的眨眼（表情）权重矩阵, in paper formulation (4)
             e = e * eye_att
             # e = e.repeat(enc_x.shape[0], 1)
-            h = torch.cat([enc_x, enc_w, e], dim=-1)
+            h = torch.cat([enc_x, enc_w, e], dim=-1) # 36分解后采样点 + 32音频特征 + 7表情特征 = 75
         else:
             h = torch.cat([enc_x, enc_w], dim=-1)
 
-        h = self.sigma_net(h)
-
-        sigma = torch.exp(h[..., 0])
-        geo_feat = h[..., 1:]
+        h = self.sigma_net(h) # MLP
+        sigma = torch.exp(torch.clamp(h[..., 0], min=-40, max=40)) # choose h's 1st column as sigma
+        # sigma = torch.exp(h[..., 0])
+        geo_feat = h[..., 1:] # choose the rest of columns as geo_feat
 
         return {
             'sigma': sigma,
