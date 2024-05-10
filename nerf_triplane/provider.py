@@ -191,26 +191,29 @@ class NeRFDataset:
             # cross-driven extracted features. 
             else:
                 if self.opt.asr_model == 'ave':
-                    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-                    model = AudioEncoder().to(device).eval()
-                    ckpt = torch.load('./nerf_triplane/checkpoints/audio_visual_encoder.pth')
-                    model.load_state_dict({f'audio_encoder.{k}': v for k, v in ckpt.items()})
-                    dataset = AudDataset(self.opt.aud)
-                    data_loader = DataLoader(dataset, batch_size=64, shuffle=False)
-                    outputs = []
-                    for mel in data_loader:
-                        mel = mel.to(device)
-                        with torch.no_grad():
-                            out = model(mel)
-                        outputs.append(out)
-                    outputs = torch.cat(outputs, dim=0).cpu()
-                    first_frame, last_frame = outputs[:1], outputs[-1:]
-                    aud_features = torch.cat([first_frame.repeat(2, 1), outputs, last_frame.repeat(2, 1)], dim=0).numpy()
+                    try:
+                        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+                        model = AudioEncoder().to(device).eval()
+                        ckpt = torch.load('./nerf_triplane/checkpoints/audio_visual_encoder.pth')
+                        model.load_state_dict({f'audio_encoder.{k}': v for k, v in ckpt.items()})
+                        dataset = AudDataset(self.opt.aud)
+                        data_loader = DataLoader(dataset, batch_size=64, shuffle=False)
+                        outputs = []
+                        for mel in data_loader:
+                            mel = mel.to(device)
+                            with torch.no_grad():
+                                out = model(mel)
+                            outputs.append(out)
+                        outputs = torch.cat(outputs, dim=0).cpu()
+                        first_frame, last_frame = outputs[:1], outputs[-1:]
+                        aud_features = torch.cat([first_frame.repeat(2, 1), outputs, last_frame.repeat(2, 1)], dim=0).numpy()
+                    except:
+                        print(f'[ERROR] If do not use Audio Visual Encoder, replace it with the npy file path.')
                 else:
                     try:
                         aud_features = np.load(self.opt.aud)
                     except:
-                        print(f'[ERROR] If do not use Audio Visual Encoder, replace it with the npy file path')
+                        print(f'[ERROR] If do not use Audio Visual Encoder, replace it with the npy file path.')
 
             if self.opt.asr_model == 'ave':
                 aud_features = torch.from_numpy(aud_features).unsqueeze(0)
@@ -245,14 +248,18 @@ class NeRFDataset:
 
                 print(f'[INFO] load {self.opt.aud} aud_features: {aud_features.shape}')
 
-
-        bs = np.load(os.path.join(self.root_path, 'bs.npy'))
-        if self.opt.bs_area == "upper":
-            bs = np.hstack((bs[:, 0:5], bs[:, 8:10]))
-        elif self.opt.bs_area == "single":
-            bs = np.hstack((bs[:, 0].reshape(-1, 1),bs[:, 2].reshape(-1, 1),bs[:, 3].reshape(-1, 1), bs[:, 8].reshape(-1, 1)))
-        elif self.opt.bs_area == "eye":
-            bs = bs[:,8:10]
+        if self.opt.au45:
+            import pandas as pd
+            au_blink_info = pd.read_csv(os.path.join(self.root_path, 'au.csv'))
+            bs = au_blink_info[' AU45_r'].values
+        else:
+            bs = np.load(os.path.join(self.root_path, 'bs.npy'))
+            if self.opt.bs_area == "upper":
+                bs = np.hstack((bs[:, 0:5], bs[:, 8:10]))
+            elif self.opt.bs_area == "single":
+                bs = np.hstack((bs[:, 0].reshape(-1, 1),bs[:, 2].reshape(-1, 1),bs[:, 3].reshape(-1, 1), bs[:, 8].reshape(-1, 1)))
+            elif self.opt.bs_area == "eye":
+                bs = bs[:,8:10]
 
 
         self.torso_img = []
@@ -352,6 +359,8 @@ class NeRFDataset:
 
             if self.opt.exp_eye:
                 area = bs[f['img_id']]
+                if self.opt.au45:
+                    area = np.clip(area, 0, 2) / 2
                 self.eye_area.append(area)
 
                 xmin, xmax = int(lms[36:48, 1].min()), int(lms[36:48, 1].max())
@@ -441,13 +450,15 @@ class NeRFDataset:
                     start = max(0, i - 1)
                     end = min(ori_eye.shape[0], i + 2)
                     self.eye_area[i] = ori_eye[start:end].mean()
-            if self.opt.bs_area == "upper":
-                self.eye_area = torch.from_numpy(self.eye_area).view(-1, 7) # [N, 7]
-            elif self.opt.bs_area == "single":
-                self.eye_area = torch.from_numpy(self.eye_area).view(-1, 4)  # [N, 7]
+            if self.opt.au45:
+                self.eye_area = torch.from_numpy(self.eye_area).view(-1, 1)  # [N, 1]
             else:
-                self.eye_area = torch.from_numpy(self.eye_area).view(-1, 2)
-
+                if self.opt.bs_area == "upper":
+                    self.eye_area = torch.from_numpy(self.eye_area).view(-1, 7) # [N, 7]
+                elif self.opt.bs_area == "single":
+                    self.eye_area = torch.from_numpy(self.eye_area).view(-1, 4)  # [N, 7]
+                else:
+                    self.eye_area = torch.from_numpy(self.eye_area).view(-1, 2)
         
         # calculate mean radius of all camera poses
         self.radius = self.poses[:, :3, 3].norm(dim=-1).mean(0).item()

@@ -41,7 +41,7 @@ if __name__ == '__main__':
     parser.add_argument('--amb_aud_loss', type=int, default=1, help="use ambient aud loss")
     parser.add_argument('--amb_eye_loss', type=int, default=1, help="use ambient eye loss")
     parser.add_argument('--unc_loss', type=int, default=1, help="use uncertainty loss")
-    parser.add_argument('--lambda_amb', type=float, default=1e-1, help="lambda for ambient loss")
+    parser.add_argument('--lambda_amb', type=float, default=1e-4, help="lambda for ambient loss")
     parser.add_argument('--pyramid_loss', type=int, default=0, help="use perceptual loss")
 
     ### network backbone options
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     parser.add_argument('--fix_eye', type=float, default=-1, help="fixed eye area, negative to disable, set to 0-0.3 for a reasonable eye")
     parser.add_argument('--smooth_eye', action='store_true', help="smooth the eye area sequence")
     parser.add_argument('--bs_area', type=str, default="upper", help="upper or eye")
-
+    parser.add_argument('--au45', action='store_true', help="use openface au45")
     parser.add_argument('--torso_shrink', type=float, default=0.8, help="shrink bg coords to allow more flexibility in deform")
 
     ### dataset options

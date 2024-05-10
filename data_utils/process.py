@@ -18,11 +18,11 @@ def extract_audio(path, out_path, sample_rate=16000):
     os.system(cmd)
     print(f'[INFO] ===== extracted audio =====')
 
-def extract_audio_features(path, mode='deepspeech'):
+def extract_audio_features(path, mode='ave'):
 
     print(f'[INFO] ===== extract audio labels for {path} =====')
-    if mode == 'wav2vec':
-        cmd = f'python nerf/asr.py --wav {path} --save_feats'
+    if mode == 'ave':
+        print(f'AVE has been integrated into the training code, no need to extract audio features')
     elif mode == "deepspeech": # deepspeech
         cmd = f'python data_utils/deepspeech_features/extract_ds_features.py --input {path}'
     elif mode == "hubert":
