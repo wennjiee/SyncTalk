@@ -382,8 +382,8 @@ class NeRFNetwork(NeRFRenderer):
             h = torch.cat([enc_x, enc_w], dim=-1)
 
         h = self.sigma_net(h) # MLP
-        sigma = torch.exp(torch.clamp(h[..., 0], min=-40, max=40)) # choose h's 1st column as sigma
-        # sigma = torch.exp(h[..., 0])
+        sigma = torch.exp(torch.clamp(h[..., 0], min=-40, max=40)) # choose h's 1st column as sigma, seem fix bug
+        # sigma = torch.exp(h[..., 0]) # seem fix bug
         geo_feat = h[..., 1:] # choose the rest of columns as geo_feat
 
         return {
