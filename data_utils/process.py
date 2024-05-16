@@ -21,13 +21,13 @@ def extract_audio(path, out_path, sample_rate=16000):
 def extract_audio_features(path, mode='ave'):
 
     print(f'[INFO] ===== extract audio labels for {path} =====')
-    if mode == 'ave':
+    if mode == 'ave' or mode == 'hubert':
         print(f'AVE has been integrated into the training code, no need to extract audio features')
+        print(f'Starting to extract hubert.py for future choice')
+        cmd = f'python data_utils/hubert.py --wav {path}'
+        os.system(cmd)
     elif mode == "deepspeech": # deepspeech
         cmd = f'python data_utils/deepspeech_features/extract_ds_features.py --input {path}'
-        os.system(cmd)
-    elif mode == "hubert":
-        cmd = f'python data_utils/hubert.py --wav {path}'
         os.system(cmd)
     print(f'[INFO] ===== extracted audio labels =====')
 
