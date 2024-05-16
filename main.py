@@ -116,6 +116,7 @@ if __name__ == '__main__':
     parser.add_argument('-l', type=int, default=10)
     parser.add_argument('-m', type=int, default=50)
     parser.add_argument('-r', type=int, default=10)
+    parser.add_argument('--write_image', action='store_true', help="")
 
     opt = parser.parse_args()
 
