@@ -116,7 +116,7 @@ if __name__ == '__main__':
     parser.add_argument('-l', type=int, default=10)
     parser.add_argument('-m', type=int, default=50)
     parser.add_argument('-r', type=int, default=10)
-    parser.add_argument('--write_image', action='store_true', help="")
+    parser.add_argument('--write_image', type=bool, default=False, help="generate imgs for long-time audio")
 
     opt = parser.parse_args()
 

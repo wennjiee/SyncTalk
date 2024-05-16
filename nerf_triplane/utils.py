@@ -1127,8 +1127,10 @@ class Trainer(object):
                           -2 {os.path.join(save_path, f"{digitalHumanName}_{audio_model}_talk_{test_audio_name}_Audio.mp4")} -y')
         else:
             img2video(img_dir, img2video_file)
-            os.system(f'ffmpeg -i {img2video_file} -i {self.opt.aud} -strict -2 \
-                      {os.path.join(save_path, f"{digitalHumanName}_{audio_model}_talk_{test_audio_name}_Audio.mp4")} -y')
+            cmd = f'ffmpeg -i {img2video_file} -i {self.opt.aud} -strict -2 \
+                      {os.path.join(save_path, f"{digitalHumanName}_{audio_model}_talk_{test_audio_name}_Audio.mp4")} -y'
+            # print(cmd)
+            os.system(cmd)
 
         self.log(f"==> Finished Test.")
     
