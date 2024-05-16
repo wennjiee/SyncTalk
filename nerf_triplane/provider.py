@@ -199,7 +199,7 @@ class NeRFDataset:
                         dataset = AudDataset(self.opt.aud)
                         data_loader = DataLoader(dataset, batch_size=64, shuffle=False)
                         outputs = []
-                        for mel in data_loader:
+                        for mel in tqdm.tqdm(data_loader):
                             mel = mel.to(device)
                             with torch.no_grad():
                                 out = model(mel)
