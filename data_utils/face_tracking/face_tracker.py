@@ -21,12 +21,10 @@ def set_requires_grad(tensor_list):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument(
-    "--path", type=str, default="obama/ori_imgs", help="idname of target person")
+parser.add_argument("--path", type=str, default="obama/ori_imgs", help="idname of target person")
 parser.add_argument('--img_h', type=int, default=512, help='image height')
 parser.add_argument('--img_w', type=int, default=512, help='image width')
-parser.add_argument('--frame_num', type=int,
-                    default=11000, help='image number')
+parser.add_argument('--frame_num', type=int,default=11000, help='image number')
 args = parser.parse_args()
 start_id = 0
 end_id = args.frame_num
@@ -36,10 +34,10 @@ num_frames = lms.shape[0]
 h, w = args.img_h, args.img_w
 cxy = torch.tensor((w/2.0, h/2.0), dtype=torch.float).cuda()
 id_dim, exp_dim, tex_dim, point_num = 100, 79, 100, 34650
-model_3dmm = Face_3DMM(os.path.join(dir_path, '3DMM'),
-                       id_dim, exp_dim, tex_dim, point_num)
-lands_info = np.loadtxt(os.path.join(
-    dir_path, '3DMM', 'lands_info.txt'), dtype=np.int32)
+model_3dmm = Face_3DMM(os.path.join(dir_path, '3DMM'), id_dim, exp_dim, tex_dim, point_num)
+                      
+lands_info = np.loadtxt(os.path.join(dir_path, '3DMM', 'lands_info.txt'), dtype=np.int32)
+    
 lands_info = torch.as_tensor(lands_info).cuda()
 # mesh = openmesh.read_trimesh(os.path.join(dir_path, '3DMM', 'template.obj'))
 focal = 1150
@@ -54,8 +52,8 @@ trans.data[:, 2] -= 600
 focal_length = lms.new_zeros(1, requires_grad=True)
 focal_length.data += focal
 
-set_requires_grad([id_para, exp_para, tex_para,
-                   euler_angle, trans, light_para])
+set_requires_grad([id_para, exp_para, tex_para,euler_angle, trans, light_para]) # tensor.requires_grad = True
+                   
 
 sel_ids = np.arange(0, num_frames, 10)
 sel_num = sel_ids.shape[0]
@@ -79,12 +77,12 @@ for focal in range(500, 1500, 50):
 
     for iter in range(iter_num):
         id_para_batch = id_para.expand(sel_num, -1)
-        geometry = model_3dmm.forward_geo_sub(
-            id_para_batch, exp_para, lands_info[-51:].long())
-        proj_geo = forward_transform(
-            geometry, euler_angle, trans, focal_length, cxy)
-        loss_lan = cal_lan_loss(
-            proj_geo[:, :, :2], lms[sel_ids, -51:, :].detach())
+        geometry = model_3dmm.forward_geo_sub(id_para_batch, exp_para, lands_info[-51:].long())
+            
+        proj_geo = forward_transform(geometry, euler_angle, trans, focal_length, cxy)
+            
+        loss_lan = cal_lan_loss(proj_geo[:, :, :2], lms[sel_ids, -51:, :].detach())
+            
         loss_regid = torch.mean(id_para*id_para)*8
         loss_regexp = torch.mean(exp_para*exp_para)*0.5
         loss = loss_lan + loss_regid + loss_regexp
@@ -114,18 +112,18 @@ set_requires_grad([id_para, exp_para, euler_angle, trans])
 
 optimizer_id = torch.optim.Adam([id_para], lr=.3)
 optimizer_exp = torch.optim.Adam([exp_para], lr=.3)
-optimizer_frame = torch.optim.Adam(
-    [euler_angle, trans], lr=.3)
+optimizer_frame = torch.optim.Adam([euler_angle, trans], lr=.3)
+    
 iter_num = 2000
 
 for iter in range(iter_num):
     id_para_batch = id_para.expand(sel_num, -1)
-    geometry = model_3dmm.forward_geo_sub(
-        id_para_batch, exp_para, lands_info[-51:].long())
-    proj_geo = forward_transform(
-        geometry, euler_angle, trans, focal_length, cxy)
-    loss_lan = cal_lan_loss(
-        proj_geo[:, :, :2], lms[sel_ids, -51:, :].detach())
+    geometry = model_3dmm.forward_geo_sub(id_para_batch, exp_para, lands_info[-51:].long())
+        
+    proj_geo = forward_transform(geometry, euler_angle, trans, focal_length, cxy)
+        
+    loss_lan = cal_lan_loss(proj_geo[:, :, :2], lms[sel_ids, -51:, :].detach())
+        
     loss_regid = torch.mean(id_para*id_para)*8
     loss_regexp = torch.mean(exp_para*exp_para)*0.5
     loss = loss_lan + loss_regid + loss_regexp
