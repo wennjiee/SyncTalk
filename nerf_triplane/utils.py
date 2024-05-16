@@ -26,6 +26,23 @@ from packaging import version as pver
 import imageio
 import lpips
 
+def img2video(img_root, video_ouput):
+    # img_root = 'model/trial_wwj_2_ave/results/imgs_talk_finance'
+    # video_ouput = 'model/trial_wwj_2_ave/results/wwj_2_talk_finance.mp4'
+    fps = 25
+    # encoder, vert important, need to understand
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    videoWriter = cv2.VideoWriter(video_ouput, fourcc, fps, (512, 512))                     
+    imgnames = os.listdir(img_root)
+    imgnames.sort(key=lambda x: int(int(x.split('_')[2])))
+    print("\nstart converting")
+    for imgname in tqdm.tqdm(imgnames):
+        frame = cv2.imread(img_root + '/' + imgname)
+        videoWriter.write(frame)
+    videoWriter.release()
+    # ffmpeg -i lc_128_talk_finance.mp4 -i ../../../demo/finance.wav -strict -2 lc_128_talk_finance_audio.mp4
+    print("converted")
+
 def custom_meshgrid(*args):
     # ref: https://pytorch.org/docs/stable/generated/torch.meshgrid.html?highlight=meshgrid#torch.meshgrid
     if pver.parse(torch.__version__) < pver.parse('1.10'):
@@ -1041,8 +1058,8 @@ class Trainer(object):
 
     # Function to blend two images with a mask
 
-    def test(self, loader, save_path=None, name=None, write_image=False):
-
+    def test(self, loader, save_path=None, name=None):
+        write_image = self.opt.write_image
         if save_path is None:
             save_path = os.path.join(self.workspace, 'results')
 
@@ -1054,11 +1071,18 @@ class Trainer(object):
         self.log(f"==> Start Test, save results to {save_path}")
 
         pbar = tqdm.tqdm(total=len(loader) * loader.batch_size, bar_format='{percentage:3.0f}% {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]')
+        # if not write_image:
         self.model.eval()
 
         all_preds = []
         all_preds_depth = []
-
+        digitalHumanName = self.opt.path.split('/')[-1]
+        audio_model = self.opt.asr_model
+        test_audio = self.opt.aud.split('/')[-1]
+        test_audio_name = test_audio.split('.')[0]
+        img_dir = os.path.join(save_path, f'imgs_talk_{test_audio_name}')
+        img2video_file = os.path.join(save_path, f"{digitalHumanName}_{audio_model}_talk_{test_audio_name}.mp4")
+        os.makedirs(img_dir, exist_ok=True)
         with torch.no_grad():
 
             for i, data in enumerate(loader):
@@ -1066,7 +1090,7 @@ class Trainer(object):
                 with torch.cuda.amp.autocast(enabled=self.fp16):
                     preds, preds_depth = self.test_step(data)                
                 
-                path = os.path.join(save_path, f'{name}_{i:04d}_rgb.png')
+                path = os.path.join(img_dir, f'{name}_{i:04d}_rgb.png')
                 path_depth = os.path.join(save_path, f'{name}_{i:04d}_depth.png')
 
                 #self.log(f"[INFO] saving test image to {path}")
@@ -1085,25 +1109,26 @@ class Trainer(object):
 
                 if write_image:
                     imageio.imwrite(path, pred)
-                    imageio.imwrite(path_depth, pred_depth)
-
-                all_preds.append(pred)
-                all_preds_depth.append(pred_depth)
+                    # imageio.imwrite(path_depth, pred_depth)
+                else:
+                    all_preds.append(pred)
+                    all_preds_depth.append(pred_depth)
 
                 pbar.update(loader.batch_size)
 
         # write video
-        all_preds = np.stack(all_preds, axis=0)
-        all_preds_depth = np.stack(all_preds_depth, axis=0)
-        imageio.mimwrite(os.path.join(save_path, f'{name}.mp4'), all_preds, fps=25, quality=10, macro_block_size=1)
-        imageio.mimwrite(os.path.join(save_path, f'{name}_depth.mp4'), all_preds_depth, fps=25, quality=10, macro_block_size=1)
-        digitalHumanName = self.opt.path.split('/')[-1]
-        audio_model = self.opt.asr_model
-        test_audio = self.opt.aud.split('/')[-1]
-        if self.opt.aud != '':
-            # os.system(f'ffmpeg -i {os.path.join(save_path, f"{name}.mp4")} -i {self.opt.aud} -strict -2 {os.path.join(save_path, f"{name}_audio.mp4")} -y')
-            os.system(f'ffmpeg -i {os.path.join(save_path, f"{name}.mp4")} -i {self.opt.aud} -strict -2 {os.path.join(save_path, f"{digitalHumanName}_{audio_model}_talk_{test_audio}.mp4")} -y')
-
+        if not write_image:
+            all_preds = np.stack(all_preds, axis=0)
+            all_preds_depth = np.stack(all_preds_depth, axis=0)
+            imageio.mimwrite(os.path.join(save_path, f'{name}.mp4'), all_preds, fps=25, quality=10, macro_block_size=1)
+            imageio.mimwrite(os.path.join(save_path, f'{name}_depth.mp4'), all_preds_depth, fps=25, quality=10, macro_block_size=1)
+            if self.opt.aud != '':
+                os.system(f'ffmpeg -i {os.path.join(save_path, f"{name}.mp4")} -i {self.opt.aud} -strict \
+                          -2 {os.path.join(save_path, f"{digitalHumanName}_{audio_model}_talk_{test_audio_name}_Audio.mp4")} -y')
+        else:
+            img2video(img_dir, img2video_file)
+            os.system(f'ffmpeg -i {img2video_file} -i {self.opt.aud} -strict -2 \
+                      {os.path.join(save_path, f"{digitalHumanName}_{audio_model}_talk_{test_audio_name}_Audio.mp4")} -y')
 
         self.log(f"==> Finished Test.")
     
