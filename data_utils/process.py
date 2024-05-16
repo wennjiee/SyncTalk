@@ -25,9 +25,10 @@ def extract_audio_features(path, mode='ave'):
         print(f'AVE has been integrated into the training code, no need to extract audio features')
     elif mode == "deepspeech": # deepspeech
         cmd = f'python data_utils/deepspeech_features/extract_ds_features.py --input {path}'
+        os.system(cmd)
     elif mode == "hubert":
         cmd = f'python data_utils/hubert.py --wav {path}'
-    os.system(cmd)
+        os.system(cmd)
     print(f'[INFO] ===== extracted audio labels =====')
 
 
