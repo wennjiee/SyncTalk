@@ -143,7 +143,17 @@ python main.py data/May --workspace model/trial_may -O --test --test_train --asr
 ```
 
 Please use files with the “.wav” extension for inference, and the inference results will be saved in “model/trial_may/results/”. If do not use Audio Visual Encoder, replace wav with the npy file path.
+* DeepSpeech
 
+  ```bash
+  python data_utils/deepspeech_features/extract_ds_features.py --input data/<name>.wav # save to data/<name>.npy
+  ```
+* HuBERT
+
+  ```bash
+  # Borrowed from GeneFace. English pre-trained.
+  python data_utils/hubert.py --wav data/<name>.wav # save to data/<name>_hu.npy
+  ```
 ### Train
 
 ```bash
@@ -155,6 +165,11 @@ Please use files with the “.wav” extension for inference, and the inference 
 python main.py data/May --workspace model/trial_may -O --iters 60000 --asr_model ave
 python main.py data/May --workspace model/trial_may -O --iters 100000 --finetune_lips --patch_size 64 --asr_model ave
 python -m tensorboard.main --logdir=model/trial_may/run/ngp 
+
+# If you want to train the torso, same as ER-NeRF
+# <head>.pth should be the latest checkpoint in trial_may
+python main.py data/May/ --workspace model/trial_may_torso/ -O --torso --head_ckpt <head>.pth --iters 150000
+
 # or you can use the script to train
 sh ./scripts/train_may.sh
 ```
