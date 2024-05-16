@@ -897,7 +897,7 @@ class Trainer(object):
             alphas = outputs['weights_sum'].clamp(1e-5, 1 - 1e-5)
             loss_ws = - alphas * torch.log2(alphas) - (1 - alphas) * torch.log2(1 - alphas)
             loss = loss + 1e-4 * loss_ws.mean()
-
+        # NOTICE: Parameter named self.pt.lambda_amb is crucial for loss, sometimes it could cause Nan probloem. Here, we set 1e-4 at line 44 in main.py.
         # aud att loss (regions out of face should be static)
         if self.opt.amb_aud_loss and not self.opt.torso:
             ambient_aud = outputs['ambient_aud']
