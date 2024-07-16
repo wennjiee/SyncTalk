@@ -232,7 +232,7 @@ if __name__ == '__main__':
         else:
             scheduler = lambda optimizer: optim.lr_scheduler.LambdaLR(optimizer, lambda iter: 0.5 ** (iter / opt.iters))
 
-        metrics = [PSNRMeter(), LPIPSMeter(device=device),LMDMeter(backend='fan')]
+        metrics = [PSNRMeter(), LPIPSMeter(device=device), LMDMeter(backend='fan')]
 
         eval_interval = max(1, int(5000 / len(train_loader)))
         trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace, optimizer=optimizer, criterion=criterion, ema_decay=0.95, fp16=opt.fp16, lr_scheduler=scheduler, scheduler_update_every_step=True, metrics=metrics, use_checkpoint=opt.ckpt, eval_interval=eval_interval)
