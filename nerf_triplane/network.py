@@ -325,11 +325,11 @@ class NeRFNetwork(NeRFRenderer):
         if self.testing or not self.opt.unc_loss:
             unc = torch.zeros_like(unc_inp)
         else:
-            unc = self.unc_net(unc_inp.detach())
+            unc = self.unc_net(unc_inp.detach()) # MLP
 
         return unc
 
-    # x采样点坐标、d采样点方向、enc_a音频编码、c、e眨眼矩阵
+    # x采样点坐标1048576=65536*16、d采样点方向d[0]=d[15], d[16]=d[31]、enc_a音频编码、c、e眨眼矩阵
     def forward(self, x, d, enc_a, c, e=None):
         # x: [N, 3], in [-bound, bound]
         # d: [N, 3], nomalized in [-1, 1]
@@ -345,17 +345,17 @@ class NeRFNetwork(NeRFRenderer):
         eye_att = sigma_result['ambient_eye'] # attention weight of expression
 
         # color
-        enc_d = self.encoder_dir(d) # self.encoder_dir = get_encoder('spherical_harmonics')
+        enc_d = self.encoder_dir(d) # self.encoder_dir = get_encoder('spherical_harmonics'), enc_d[0] = enc_d[15]
 
         if c is not None:
             h = torch.cat([enc_d, geo_feat, c.repeat(x.shape[0], 1)], dim=-1) # 16 + 64 + 4
         else:
             h = torch.cat([enc_d, geo_feat], dim=-1)
                 
-        h_color = self.color_net(h) # MLP, get every sample's rgb
+        h_color = self.color_net(h) # MLP, get every sample's rgb, 65536*16 = 1048576
         color = torch.sigmoid(h_color)*(1 + 2*0.001) - 0.001
         
-        uncertainty = self.predict_uncertainty(enc_x)
+        uncertainty = self.predict_uncertainty(enc_x) # enc_x = 1048576*36 as input in MLP
         uncertainty = torch.log(1 + torch.exp(uncertainty))
 
         return sigma, color, aud_ch_att, eye_att, uncertainty[..., None]

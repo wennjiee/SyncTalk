@@ -116,7 +116,7 @@ if __name__ == '__main__':
     parser.add_argument('-l', type=int, default=10)
     parser.add_argument('-m', type=int, default=50)
     parser.add_argument('-r', type=int, default=10)
-    parser.add_argument('--write_image', type=bool, default=False, help="generate imgs for long-time audio")
+    parser.add_argument('--write_image', action='store_true', help="generate imgs for long-time audio")
 
     opt = parser.parse_args()
 
@@ -184,7 +184,7 @@ if __name__ == '__main__':
         trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace, criterion=criterion, fp16=opt.fp16, metrics=metrics, use_checkpoint=opt.ckpt)
 
         if opt.test_train:
-            test_set = NeRFDataset(opt, device=device, type='train')
+            test_set = NeRFDataset(opt, device=device, type='all')
             # a manual fix to test on the training dataset
             test_set.training = False 
             test_set.num_rays = -1
@@ -232,7 +232,7 @@ if __name__ == '__main__':
         else:
             scheduler = lambda optimizer: optim.lr_scheduler.LambdaLR(optimizer, lambda iter: 0.5 ** (iter / opt.iters))
 
-        metrics = [PSNRMeter(), LPIPSMeter(device=device),LMDMeter(backend='fan')]
+        metrics = [PSNRMeter(), LPIPSMeter(device=device), LMDMeter(backend='fan')]
 
         eval_interval = max(1, int(5000 / len(train_loader)))
         trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace, optimizer=optimizer, criterion=criterion, ema_decay=0.95, fp16=opt.fp16, lr_scheduler=scheduler, scheduler_update_every_step=True, metrics=metrics, use_checkpoint=opt.ckpt, eval_interval=eval_interval)
@@ -245,7 +245,7 @@ if __name__ == '__main__':
         else:
             valid_loader = NeRFDataset(opt, device=device, type='val', downscale=1).dataloader()
 
-            max_epochs = np.ceil(opt.iters / len(train_loader)).astype(np.int32)
+            max_epochs = np.ceil(opt.iters / (len(train_loader) * train_loader.batch_size)).astype(np.int32)
             print(f'[INFO] max_epoch = {max_epochs}')
             trainer.train(train_loader, valid_loader, max_epochs)
 

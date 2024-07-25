@@ -332,7 +332,7 @@ def get_rays(poses, intrinsics, H, W, N=-1, patch_size=1, rect=None):
             inds = inds.unsqueeze(0) # [1, N]
 
         else:
-            inds = torch.randint(0, H*W, size=[N], device=device) # may duplicate
+            inds = torch.randint(0, H*W, size=[N], device=device) # may duplicate, generate index in H_512*W_512 images, which size is N
             inds = inds.expand([B, N])
 
             # inds = torch.randperm(H * W, device=device)[:N]
@@ -794,7 +794,7 @@ class Trainer(object):
         eye = data['eye'] # [B, 1]
         auds = data['auds'] # [B, 29, 16]
         index = data['index'] # [B]
-        loss_perception =0
+        loss_perception = 0
 
         if not self.opt.torso:
             rgb = data['images'] # [B, N, 3]
@@ -897,7 +897,7 @@ class Trainer(object):
             alphas = outputs['weights_sum'].clamp(1e-5, 1 - 1e-5)
             loss_ws = - alphas * torch.log2(alphas) - (1 - alphas) * torch.log2(1 - alphas)
             loss = loss + 1e-4 * loss_ws.mean()
-        # NOTICE: Parameter named self.pt.lambda_amb is crucial for loss, sometimes it could cause Nan probloem. Here, we set 1e-4 at line 44 in main.py.
+        # NOTE: Parameter named self.pt.lambda_amb is crucial for loss, sometimes it could cause Nan probloem. Here, we set 1e-4 at line 44 in main.py.
         # aud att loss (regions out of face should be static)
         if self.opt.amb_aud_loss and not self.opt.torso:
             ambient_aud = outputs['ambient_aud']
@@ -1082,7 +1082,8 @@ class Trainer(object):
         test_audio_name = test_audio.split('.')[0]
         img_dir = os.path.join(save_path, f'imgs_talk_{test_audio_name}')
         img2video_file = os.path.join(save_path, f"{digitalHumanName}_{audio_model}_talk_{test_audio_name}.mp4")
-        os.makedirs(img_dir, exist_ok=True)
+        if write_image:
+            os.makedirs(img_dir, exist_ok=True)
         with torch.no_grad():
 
             for i, data in enumerate(loader):

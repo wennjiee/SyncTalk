@@ -13,3 +13,4 @@ data/*
 *.png
 *.mat
 *.obj
+scripts/train.py
