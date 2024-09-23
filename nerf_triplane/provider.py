@@ -197,7 +197,7 @@ class NeRFDataset:
                         ckpt = torch.load('./nerf_triplane/checkpoints/audio_visual_encoder.pth')
                         model.load_state_dict({f'audio_encoder.{k}': v for k, v in ckpt.items()})
                         dataset = AudDataset(self.opt.aud)
-                        data_loader = DataLoader(dataset, batch_size=64, shuffle=False)
+                        data_loader = DataLoader(dataset, batch_size=128, shuffle=False, num_workers=2)
                         outputs = []
                         for mel in tqdm.tqdm(data_loader):
                             mel = mel.to(device)
