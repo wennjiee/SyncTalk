@@ -419,7 +419,10 @@ def save_transforms(base_dir, ori_imgs_dir):
     print(f'[INFO] ===== finished saving transforms =====')
 
 def del_cache(cache_dir):
-    os.system(f'rmdir /s /q {cache_dir}')
+    if os.name == "nt":
+        os.system(f'rmdir /s /q {cache_dir}')
+    elif os.name == "posix":
+        os.system(f'rm -rf {cache_dir}')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
