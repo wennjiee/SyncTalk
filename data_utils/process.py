@@ -14,7 +14,7 @@ from face_tracking.util import euler2rot
 def extract_audio(path, out_path, sample_rate=16000):
     
     print(f'[INFO] ===== extract audio from {path} to {out_path} =====')
-    cmd = f'ffmpeg -i {path} -f wav -ar {sample_rate} {out_path}'
+    cmd = f'ffmpeg -i {path} -y -f wav -ar {sample_rate} {out_path}'
     os.system(cmd)
     print(f'[INFO] ===== extracted audio =====')
 
@@ -23,7 +23,7 @@ def extract_audio_features(path, mode='ave'):
     print(f'[INFO] ===== extract audio labels for {path} =====')
     if mode == 'ave' or mode == 'hubert':
         print(f'AVE has been integrated into the training code, no need to extract audio features')
-        print(f'Starting to extract hubert.py for future choice')
+        print(f'For convenience, Starting to extract hubert.py for future choice')
         cmd = f'python data_utils/hubert.py --wav {path}'
         os.system(cmd)
     elif mode == "deepspeech": # deepspeech
@@ -418,6 +418,8 @@ def save_transforms(base_dir, ori_imgs_dir):
 
     print(f'[INFO] ===== finished saving transforms =====')
 
+def del_cache(cache_dir):
+    os.system(f'rmdir /s /q {cache_dir}')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -488,3 +490,5 @@ if __name__ == '__main__':
     if opt.task == -1 or opt.task == 10:
         save_transforms(base_dir, ori_imgs_dir)
 
+    if opt.task == -1 or opt.task == 11:
+        del_cache(flow_dir)
