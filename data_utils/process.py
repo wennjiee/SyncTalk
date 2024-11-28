@@ -419,16 +419,14 @@ def save_transforms(base_dir, ori_imgs_dir):
     print(f'[INFO] ===== finished saving transforms =====')
 
 def del_cache(cache_dir):
-    if os.name == "nt":
-        os.system(f'rmdir /s /q {cache_dir}')
-    elif os.name == "posix":
-        os.system(f'rm -rf {cache_dir}')
+    import shutil
+    shutil.rmtree(cache_dir)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('path', type=str, help="path to video file")
     parser.add_argument('--task', type=int, default=-1, help="-1 means all")
-    parser.add_argument('--asr', type=str, default='deepspeech', help="wav2vec or deepspeech or hubert or ave")
+    parser.add_argument('--asr', type=str, default='hubert', help="wav2vec or deepspeech or hubert or ave")
 
 
     opt = parser.parse_args()
