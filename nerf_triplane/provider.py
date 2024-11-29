@@ -212,7 +212,7 @@ class NeRFDataset:
                 else:
                     try:
                         # print(self.opt.aud.split('.')[0]+'_hu.npy')
-                        aud_features = np.load(self.opt.aud.split('.')[0]+'_hu.npy')
+                        aud_features = np.load(self.opt.aud.replace('.wav', '_hu.npy'))
                     except:
                         print(f'[ERROR] If do not use Audio Visual Encoder, replace it with the npy file path.')
 
