@@ -2,13 +2,14 @@ import os
 import glob
 from ffmpy import FFmpeg
 import sys
-
+from datetime import datetime
 if __name__ == '__main__':
-    digitalHumanName = 'kcj_head'
+    start_time = datetime.now()
+    digitalHumanName = ''
     audio_model = 'ave'
-    testAudioName = 'dujun_total'
+    testAudioName = ''
     test_audio = f'{testAudioName}.wav'
-    is_write_imgs = True
+    is_write_imgs = False
     checkpoints_paths = sorted(glob.glob(os.path.join(f'model/trial_{digitalHumanName}_{audio_model}/checkpoints/', '*.pth')), reverse=True)
     ck_path = checkpoints_paths[0].replace('\\', '/')
     audio_data = f'demo/{test_audio}'
@@ -25,3 +26,7 @@ if __name__ == '__main__':
     print(cmd)
     os.system(cmd)
     print('cmd processed')
+    end_time = datetime.now()
+    elapsed_time = (end_time - start_time).total_seconds()
+    print(f"Cost：{elapsed_time} seconds")
+    # 6min18s ~ 1763s (image True) ~ 30min
