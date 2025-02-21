@@ -2,11 +2,12 @@ from transformers import Wav2Vec2Processor, HubertModel
 import soundfile as sf
 import numpy as np
 import torch
-
+import os
+print(os.getcwd())
 print("Loading the Wav2Vec2 Processor...")
-wav2vec2_processor = Wav2Vec2Processor.from_pretrained("../ER-NERF/assets/hubert-ls960")
+wav2vec2_processor = Wav2Vec2Processor.from_pretrained("../_pretrained/hubert-ls960")
 print("Loading the HuBERT Model...")
-hubert_model = HubertModel.from_pretrained("../ER-NERF/assets/hubert-ls960")
+hubert_model = HubertModel.from_pretrained("../_pretrained/hubert-ls960")
 
 
 def get_hubert_from_16k_wav(wav_16k_name):
@@ -76,7 +77,7 @@ from argparse import ArgumentParser
 import librosa
 
 parser = ArgumentParser()
-parser.add_argument('--wav', type=str, help='')
+parser.add_argument('--wav', type=str, help='', default='demo/LC_Vocals.wav')
 args = parser.parse_args()
 
 wav_name = args.wav
