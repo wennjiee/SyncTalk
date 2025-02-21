@@ -205,7 +205,7 @@ if __name__ == '__main__':
 
         else:
             ### test and save video (fast)  
-            trainer.test(test_loader)
+            trainer.test_acc(test_loader)
 
             ### evaluate metrics (slow)
             if test_loader.has_gt:

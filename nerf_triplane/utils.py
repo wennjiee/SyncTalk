@@ -25,6 +25,8 @@ from torch_ema import ExponentialMovingAverage
 from packaging import version as pver
 import imageio
 import lpips
+import concurrent.futures
+
 
 def img2video(img_root, video_ouput):
     # img_root = 'model/trial_wwj_2_ave/results/imgs_talk_finance'
@@ -1105,24 +1107,24 @@ class Trainer(object):
                     pred = preds[0].detach().cpu().numpy()
                     pred = (pred * 255).astype(np.uint8)
 
-                pred_depth = preds_depth[0].detach().cpu().numpy()
-                pred_depth = (pred_depth * 255).astype(np.uint8)
+                # pred_depth = preds_depth[0].detach().cpu().numpy()
+                # pred_depth = (pred_depth * 255).astype(np.uint8)
 
                 if write_image:
                     imageio.imwrite(path, pred)
                     # imageio.imwrite(path_depth, pred_depth)
                 else:
                     all_preds.append(pred)
-                    all_preds_depth.append(pred_depth)
+                    # all_preds_depth.append(pred_depth)
 
                 pbar.update(loader.batch_size)
 
         # write video
         if not write_image:
             all_preds = np.stack(all_preds, axis=0)
-            all_preds_depth = np.stack(all_preds_depth, axis=0)
+            # all_preds_depth = np.stack(all_preds_depth, axis=0)
             imageio.mimwrite(os.path.join(save_path, f'{name}.mp4'), all_preds, fps=25, quality=10, macro_block_size=1)
-            imageio.mimwrite(os.path.join(save_path, f'{name}_depth.mp4'), all_preds_depth, fps=25, quality=10, macro_block_size=1)
+            # imageio.mimwrite(os.path.join(save_path, f'{name}_depth.mp4'), all_preds_depth, fps=25, quality=10, macro_block_size=1)
             if self.opt.aud != '':
                 os.system(f'ffmpeg -i {os.path.join(save_path, f"{name}.mp4")} -i {self.opt.aud} -strict \
                           -2 {os.path.join(save_path, f"{digitalHumanName}_{audio_model}_talk_{test_audio_name}_Audio.mp4")} -y')
@@ -1134,7 +1136,86 @@ class Trainer(object):
             os.system(cmd)
 
         self.log(f"==> Finished Test.")
-    
+
+    def test_acc(self, loader, save_path=None, name=None):
+        write_image = self.opt.write_image
+        
+        if save_path is None:
+            save_path = os.path.join(self.workspace, 'results')
+        if name is None:
+            name = f'{self.name}_ep{self.epoch:04d}'
+
+        os.makedirs(save_path, exist_ok=True)
+        
+        self.log(f"==> Start Test, save results to {save_path}")
+
+        pbar = tqdm.tqdm(total=len(loader) * loader.batch_size, bar_format='{percentage:3.0f}% {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]')
+        self.model.eval()
+
+        all_preds = []
+        all_preds_depth = []
+        digitalHumanName = self.opt.path.split('/')[-1]
+        audio_model = self.opt.asr_model
+        test_audio = self.opt.aud.split('/')[-1]
+        test_audio_name = test_audio.split('.')[0]
+        img_dir = os.path.join(save_path, f'imgs_talk_{test_audio_name}')
+        img2video_file = os.path.join(save_path, f"{digitalHumanName}_{audio_model}_talk_{test_audio_name}.mp4")
+        if write_image:
+            os.makedirs(img_dir, exist_ok=True)
+
+        with torch.no_grad():
+            with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+                futures = []
+                for i, data in enumerate(loader):
+                    futures.append(executor.submit(self.process_frame, i, data, pbar))
+                results = []
+                for future in concurrent.futures.as_completed(futures):
+                    i, pred = future.result()
+                    results.append((i, pred))
+
+                results.sort(key=lambda x: x[0])
+
+                for _, pred in results:
+                    if write_image:
+                        imageio.imwrite(os.path.join(img_dir, f'{name}_{_}.png'), pred)
+                    else:
+                        all_preds.append(pred)
+
+                pbar.update(loader.batch_size)
+            pbar.close()
+
+        # write video
+        if not write_image:
+            all_preds = np.stack(all_preds, axis=0)
+            imageio.mimwrite(os.path.join(save_path, f'{name}.mp4'), all_preds, fps=25, quality=10, macro_block_size=1)
+            if self.opt.aud != '':
+                os.system(f'ffmpeg -i {os.path.join(save_path, f"{name}.mp4")} -i {self.opt.aud} -strict \
+                        -2 {os.path.join(save_path, f"{digitalHumanName}_{audio_model}_talk_{test_audio_name}_Audio.mp4")} -y')
+        else:
+            img2video(img_dir, img2video_file)
+            cmd = f'ffmpeg -i {img2video_file} -i {self.opt.aud} -strict -2 \
+                    {os.path.join(save_path, f"{digitalHumanName}_{audio_model}_talk_{test_audio_name}_Audio.mp4")} -y'
+            os.system(cmd)
+
+        self.log(f"==> Finished Test.")
+
+    def process_frame(self, i, data, pbar):
+        with torch.cuda.amp.autocast(enabled=self.fp16):
+            preds, preds_depth = self.test_step(data)
+
+        if self.opt.color_space == 'linear':
+            preds = linear_to_srgb(preds)
+        
+        if self.opt.portrait:
+            pred = blend_with_mask_cuda(preds[0], data["bg_gt_images"].squeeze(0), data["bg_face_mask"].squeeze(0))
+            pred = (pred * 255).astype(np.uint8)
+        else:
+            pred = preds[0].detach().cpu().numpy()
+            pred = (pred * 255).astype(np.uint8)
+        
+        pbar.update(1)
+        return i, pred
+
     # [GUI] just train for 16 steps, without any other overhead that may slow down rendering.
     def train_gui(self, train_loader, step=16):
 
